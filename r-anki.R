@@ -44,7 +44,7 @@ full.flds <- str_split(full.flds[,1], "\037")
 full.nid <- dbGetQuery(rtk1.full, "select id from notes")
 full.cid <- dbGetQuery(rtk1.full, "select nid, id from cards")
 
-full.note <- matrix(rep("",4*2200), ncol=4, 
+full.note <- matrix(rep(0L,4*2200), ncol=4, 
 										dimnames=list(1:2200,c("v6","v4","nid","cid")))
 
 for (i in 1:2200) {
@@ -62,7 +62,7 @@ full.note <- as.data.frame(full.note, stringsAsFactors = FALSE)
 v6.nid <- dbGetQuery(rtk1.v6, "select sfld, id from notes")
 v6.cid <- dbGetQuery(rtk1.v6, "select nid, id from cards")
 
-v6.note <- matrix(rep("",4*2200), ncol=4, 
+v6.note <- matrix(rep(0L,4*2200), ncol=4, 
 									dimnames=list(1:2200,c("v4","nid","cid","newcid")))
 
 for (i in 1:2200) {
@@ -86,16 +86,46 @@ revlog.old <- dbGetQuery(rtk1.v6, "select * from revlog")
 revlog.new <- revlog.old
 revlog.new$cid <- 0L
 for (i in 1:8061) {
-  revlog.new[revlog.new$cid==]
+	old.cid <- revlog.old[i, 2]
+  revlog.new[i, 2] <- as.integer(v6.note[v6.note$cid==old.cid, 4])
 }
 
-
-
-# Remove tabe in rtk1.full
+# Remove old table
 dbRemoveTable(rtk1.full, "revlog")
 
-
 # Write new table to rtk1.full
-dbWriteTable(rtk1.full, "revlog", "data where?")
+dbWriteTable(rtk1.full, "revlog", revlog.new)
+
+dbSendQuery(rtk1.full,
+						"CREATE TABLE revlog_2 (
+    id              integer primary key,
+    cid             integer not null,
+    usn             integer not null,
+    ease            integer not null,
+    ivl             integer not null,
+    lastIvl         integer not null,
+    factor          integer not null,
+    time            integer not null,
+    type            integer not null
+)")
+
+dbSendQuery(rtk1.full,
+						"INSERT INTO revlog_2 (id, cid, usn, ease, ivl, lastIvl, factor, time, type) SELECT id, cid, usn, ease, ivl, lastIvl, factor, time, type FROM revlog;")
 
 
+dbSendQuery(rtk1.full,
+"CREATE INDEX ix_revlog_cid on revlog (cid);
+CREATE INDEX ix_revlog_usn on revlog (usn);")
+
+
+dbSendQuery(rtk1.full,"CREATE INDEX ix_revlog_usn on revlog (usn);")
+
+
+dbSendQuery(rtk1.full, "UPDATE cards set queue = 2;")
+
+# List table in new database
+dbListTables(rtk1.full)
+
+# Disconnect
+dbDisconnect(rtk1.full)
+dbDisconnect(rtk1.v6)
