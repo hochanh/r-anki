@@ -44,4 +44,6 @@ dbSendQuery(rtk1.v6, "DROP TABLE notes_2")
 dbDisconnect(rtk1.full)
 dbDisconnect(rtk1.v6)
 
-
+# AS LONG AS YOU DON'T CHECK DATABASE IN ANKI,
+# EVERYTHING WILL BE FINE!
+# I'LL FIND DOWN WHY LATER :)
